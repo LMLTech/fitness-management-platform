@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  # 1. Set mysql database server
+  mysql:
+    image: mysql:8.0
+    container_name: fitness_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fitness_network
+
+  #2. Set Redis Cache Server
+  redis:
+    image: redis:7-alpine
+    container_name: fitness_redis
+    restart: always
+    # Lệnh này để yêu cầu password khi kết nối redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fitness_network
+
+networks:
+  fitness_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  redis_data:
