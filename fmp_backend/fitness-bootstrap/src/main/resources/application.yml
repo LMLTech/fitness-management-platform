@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: fitness-management-platform
+
+  # đọc cấu hình file application-env.properties
+  config:
+    import: file:application-env.properties
+
+  # Cấu hình kết nối MySQL
+  datasource:
+    url: jdbc:mysql://localhost:${MYSQL_PORT:3308}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Cấu hình JPA (Hibernate)
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Cấu hình kết nối Redis
+  data:
+    redis:
+      host: localhost
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD}
+
+server:
+  port: ${APP_PORT:8080}

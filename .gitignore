@@ -13,7 +13,7 @@ target/
 Thumbs.db
 
 # Env
-.env
+application-env.properties
 
 # Docker
 docker-data/
@@ -51,7 +51,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files
-.env*
+application-env.properties.example
 
 # vercel
 .vercel
