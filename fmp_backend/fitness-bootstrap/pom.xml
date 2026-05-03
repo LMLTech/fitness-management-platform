@@ -10,6 +10,23 @@
     </parent>
 
     <artifactId>fitness-bootstrap</artifactId>
+    <dependencies>
+        <dependency>
+            <groupId>com.fitness</groupId>
+            <artifactId>fitness-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fitness</groupId>
+            <artifactId>fitness-infrastructure</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fitness</groupId>
+            <artifactId>fitness-batch</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>

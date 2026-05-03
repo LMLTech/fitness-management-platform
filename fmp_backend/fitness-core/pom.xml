@@ -10,6 +10,19 @@
     </parent>
 
     <artifactId>fitness-core</artifactId>
+    <dependencies>
+        <dependency>
+            <groupId>com.fitness</groupId>
+            <artifactId>fitness-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
