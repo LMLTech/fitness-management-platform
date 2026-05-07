@@ -7,16 +7,35 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
-@Configuration
-@EnableWebSecurity
+@Configuration // Khai báo class config cho Spring
+@EnableWebSecurity // Bật Spring Security
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
+
+        http
+                // Tắt CSRF vì đây là API
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // Cấu hình phân quyền request
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/v1/auth/**").permitAll() // Mở toàn bộ api thuộc /auth
-                        .anyRequest().authenticated()
+
+                        // Cho phép toàn bộ API đăng ký / đăng nhập không cần token
+                        .requestMatchers("/v1/auth/**")
+                        .permitAll()
+
+                        // Swagger UI + OpenAPI
+                        .requestMatchers(
+                                "/swagger-ui/**",      // giao diện swagger
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
+                        )
+                        .permitAll()
+
+                        // Tất cả API khác bắt buộc phải đăng nhập có token
+                        .anyRequest()
+                        .authenticated()
                 );
         return http.build();
     }
