@@ -1,4 +1,4 @@
-package com.fitness.api.config.exception;
+package com.fitness.api.exception;
 
 import com.fitness.common.response.ApiResponse;
 import com.fitness.core.common.exception.DomainException;
