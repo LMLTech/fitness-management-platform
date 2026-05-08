@@ -10,6 +10,7 @@ import com.fitness.infrastructure.auth.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.UUID;
 
 import java.util.Optional;
 
@@ -41,6 +42,7 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
                 .fullName(user.getFullName())
                 .status(user.getStatus())
                 .is2faEnabled(false)
+                .twoFactorSecret(null)
                 .build();
 
         // 2. Lưu User và ép Hibernate đẩy dữ liệu xuống DB ngay lập tức
@@ -60,7 +62,32 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email).map(this::mapToDomain);
+        return userRepository.findByEmail(email)
+                .map(this::mapToDomain);
+    }
+
+    @Override
+    public Optional<User> findById(UUID userId) {
+        return userRepository.findById(userId)
+                .map(this::mapToDomain);
+    }
+
+    @Override
+    @Transactional
+    public void update2FASecret(UUID userId, String secret) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setTwoFactorSecret(secret);
+            userRepository.save(user);
+        });
+    }
+
+    @Override
+    @Transactional
+    public void enable2FA(UUID userId) {
+        userRepository.findById(userId).ifPresent(user -> {
+            user.setIs2faEnabled(true);
+            userRepository.save(user);
+        });
     }
 
     // Helper method để map dữ liệu đồng nhất
@@ -74,6 +101,7 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
                 .fullName(entity.getFullName())
                 .status(entity.getStatus())
                 .is2faEnabled(entity.getIs2faEnabled())
+                .twoFactorSecret(entity.getTwoFactorSecret())
                 .createdAt(entity.getCreatedAt()) // Lấy giá trị đã được DB sinh ra
                 .build();
     }

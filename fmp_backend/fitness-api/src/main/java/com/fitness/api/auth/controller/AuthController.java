@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 import java.util.Map;
 
@@ -61,5 +62,30 @@ public class AuthController {
         String token = authUseCase.login(command);
 
         return ResponseEntity.ok(ApiResponse.success(Map.of("accessToken", token), "Đăng nhập thành công!"));
+    }
+    @PostMapping("/2fa/setup")
+    public ResponseEntity<ApiResponse<Map<String, String>>> setup2FA(
+            @RequestParam UUID userId) {
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        authUseCase.setup2FA(userId),
+                        "Vui lòng quét mã QR"
+                )
+        );
+    }
+
+    @PostMapping("/2fa/verify")
+    public ResponseEntity<ApiResponse<String>> verify2FA(
+            @RequestParam UUID userId,
+            @RequestParam int code) {
+
+        authUseCase.enable2FA(userId, code);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Đã kích hoạt bảo mật 2 lớp thành công!"
+                )
+        );
     }
 }

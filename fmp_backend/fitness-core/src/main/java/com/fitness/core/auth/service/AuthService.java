@@ -11,6 +11,8 @@ import com.fitness.core.auth.port.out.IPasswordEncoderPort;
 import com.fitness.core.auth.port.out.IUserRepositoryPort;
 import com.fitness.core.common.exception.DomainException;
 import org.springframework.stereotype.Service;
+import com.fitness.core.auth.port.out.ITwoFactorPort;
+import java.util.Map;
 
 import java.util.UUID;
 
@@ -20,13 +22,16 @@ public class AuthService implements IAuthUseCase {
     private final IUserRepositoryPort userRepositoryPort;
     private final IPasswordEncoderPort passwordEncoderPort;
     private final IJwtTokenPort jwtTokenPort;
+    private final ITwoFactorPort twoFactorPort;
 
     public AuthService(IUserRepositoryPort userRepositoryPort,
                        IPasswordEncoderPort passwordEncoderPort,
-                       IJwtTokenPort jwtTokenPort) {
+                       IJwtTokenPort jwtTokenPort,
+                       ITwoFactorPort twoFactorPort) {
         this.userRepositoryPort = userRepositoryPort;
         this.passwordEncoderPort = passwordEncoderPort;
         this.jwtTokenPort = jwtTokenPort;
+        this.twoFactorPort = twoFactorPort;
     }
 
     @Override
@@ -82,5 +87,60 @@ public class AuthService implements IAuthUseCase {
         }
 
         return jwtTokenPort.generateToken(user);
+    }
+
+    @Override
+    public Map<String, String> setup2FA(UUID userId) {
+
+        User user = userRepositoryPort.findById(userId)
+                .orElseThrow(() ->
+                        new DomainException("USER_NOT_FOUND", "Người dùng không tồn tại"));
+
+        // Tạo secret key cho Google Authenticator
+        String secret = twoFactorPort.generateSecretKey();
+
+        // Lưu secret xuống database
+        userRepositoryPort.update2FASecret(userId, secret);
+
+        // Tạo QR Code URL
+        String qrCodeUrl = twoFactorPort.getQrCodeUrl(secret, user.getEmail());
+
+        return Map.of(
+                "secret", secret,
+                "qrCodeUrl", qrCodeUrl
+        );
+    }
+
+    @Override
+    public void enable2FA(UUID userId, int otpCode) {
+
+        User user = userRepositoryPort.findById(userId)
+                .orElseThrow(() ->
+                        new DomainException("USER_NOT_FOUND", "Người dùng không tồn tại"));
+
+        // chưa setup secret key
+        if (user.getTwoFactorSecret() == null) {
+            throw new DomainException(
+                    "2FA_NOT_SETUP",
+                    "Bạn chưa thiết lập mã 2FA"
+            );
+        }
+
+        // kiểm tra mã OTP
+        boolean isCodeValid =
+                twoFactorPort.verifyCode(user.getTwoFactorSecret(), otpCode);
+
+        if (isCodeValid) {
+
+            // bật 2FA
+            userRepositoryPort.enable2FA(userId);
+
+        } else {
+
+            throw new DomainException(
+                    "INVALID_OTP",
+                    "Mã xác thực không đúng hoặc đã hết hạn"
+            );
+        }
     }
 }
