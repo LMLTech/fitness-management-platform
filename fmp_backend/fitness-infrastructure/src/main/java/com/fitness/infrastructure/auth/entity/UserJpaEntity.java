@@ -50,9 +50,6 @@ public class UserJpaEntity {
     @Column(name = "google_id", length = 100)
     private String googleId;
 
-    @Column(name = "facebook_id", length = 100)
-    private String facebookId;
-
     @Column(name = "is_2fa_enabled")
     private Boolean is2faEnabled;
 

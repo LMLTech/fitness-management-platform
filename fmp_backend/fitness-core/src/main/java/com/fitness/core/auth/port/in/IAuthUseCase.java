@@ -14,4 +14,7 @@ public interface IAuthUseCase {
 
     // Xác nhận bật 2FA
     void enable2FA(UUID userId, int otpCode);
+
+    // Social Login (Google OAuth2)
+    String socialLogin(SocialLoginCommand command);
 }

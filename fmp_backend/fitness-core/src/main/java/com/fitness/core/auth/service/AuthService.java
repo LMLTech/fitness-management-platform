@@ -13,6 +13,9 @@ import com.fitness.core.common.exception.DomainException;
 import org.springframework.stereotype.Service;
 import com.fitness.core.auth.port.out.ITwoFactorPort;
 import java.util.Map;
+import java.util.Optional;
+import com.fitness.core.auth.port.in.SocialLoginCommand;
+import com.fitness.core.auth.port.out.ISocialAuthPort;
 
 import java.util.UUID;
 
@@ -23,15 +26,18 @@ public class AuthService implements IAuthUseCase {
     private final IPasswordEncoderPort passwordEncoderPort;
     private final IJwtTokenPort jwtTokenPort;
     private final ITwoFactorPort twoFactorPort;
+    private final ISocialAuthPort socialAuthPort;
 
     public AuthService(IUserRepositoryPort userRepositoryPort,
                        IPasswordEncoderPort passwordEncoderPort,
                        IJwtTokenPort jwtTokenPort,
-                       ITwoFactorPort twoFactorPort) {
+                       ITwoFactorPort twoFactorPort,
+                       ISocialAuthPort socialAuthPort) {
         this.userRepositoryPort = userRepositoryPort;
         this.passwordEncoderPort = passwordEncoderPort;
         this.jwtTokenPort = jwtTokenPort;
         this.twoFactorPort = twoFactorPort;
+        this.socialAuthPort = socialAuthPort;
     }
 
     @Override
@@ -142,5 +148,47 @@ public class AuthService implements IAuthUseCase {
                     "Mã xác thực không đúng hoặc đã hết hạn"
             );
         }
+    }
+    @Override
+    public String socialLogin(SocialLoginCommand command) {
+        User socialUser;
+
+        // 1. Xác thực Token với Google
+        if ("GOOGLE".equalsIgnoreCase(command.getProvider())) {
+            socialUser = socialAuthPort.verifyGoogleToken(command.getIdToken())
+                    .orElseThrow(() -> new DomainException("INVALID_TOKEN", "Mã xác thực Google không hợp lệ"));
+        } else {
+            throw new DomainException("UNSUPPORTED_PROVIDER", "Hệ thống chưa hỗ trợ nhà cung cấp này");
+        }
+
+        // 2. Kiểm tra xem user đã tồn tại qua google_id chưa
+        Optional<User> existingByGoogleId = userRepositoryPort.findByGoogleId(socialUser.getGoogleId());
+
+        if (existingByGoogleId.isPresent()) {
+            return jwtTokenPort.generateToken(existingByGoogleId.get());
+        }
+
+        // 3. Nếu chưa có google_id, kiểm tra xem email đã tồn tại chưa
+        Optional<User> existingByEmail = userRepositoryPort.findByEmail(socialUser.getEmail());
+
+        if (existingByEmail.isPresent()) {
+            // Liên kết tài khoản cũ với google_id mới
+            User userToUpdate = existingByEmail.get();
+            userToUpdate.setGoogleId(socialUser.getGoogleId());
+            userRepositoryPort.updateSocialId(userToUpdate.getId(), "GOOGLE", socialUser.getGoogleId());
+            return jwtTokenPort.generateToken(userToUpdate);
+        }
+
+        // 4. Nếu hoàn toàn mới -> Tự động đăng ký mới (Register)
+        // Tự sinh username ngẫu nhiên từ email
+        socialUser.setUsername(socialUser.getEmail().split("@")[0] + "_" + System.currentTimeMillis() % 1000);
+        socialUser.setStatus("Active");
+
+        Member newMember = Member.builder()
+                .memberCode("MEM-GOOG-" + System.currentTimeMillis() / 1000)
+                .build();
+
+        User savedUser = userRepositoryPort.saveUserAndMember(socialUser, newMember);
+        return jwtTokenPort.generateToken(savedUser);
     }
 }

@@ -90,6 +90,22 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
         });
     }
 
+    @Override
+    public Optional<User> findByGoogleId(String googleId) {
+        return userRepository.findByGoogleId(googleId).map(this::mapToDomain);
+    }
+
+    @Override
+    @Transactional
+    public void updateSocialId(UUID userId, String provider, String socialId) {
+        userRepository.findById(userId).ifPresent(userEntity -> {
+            if ("GOOGLE".equalsIgnoreCase(provider)) {
+                userEntity.setGoogleId(socialId);
+            }
+            userRepository.save(userEntity); // Lưu thay đổi vào DB
+        });
+    }
+
     // Helper method để map dữ liệu đồng nhất
     private User mapToDomain(UserJpaEntity entity) {
         return User.builder()
@@ -102,6 +118,7 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
                 .status(entity.getStatus())
                 .is2faEnabled(entity.getIs2faEnabled())
                 .twoFactorSecret(entity.getTwoFactorSecret())
+                .googleId(entity.getGoogleId())
                 .createdAt(entity.getCreatedAt()) // Lấy giá trị đã được DB sinh ra
                 .build();
     }

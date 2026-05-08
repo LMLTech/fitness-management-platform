@@ -17,4 +17,7 @@ public interface IUserRepositoryPort {
     void update2FASecret(UUID userId, String secret);
     // bật 2FA
     void enable2FA(UUID userId);
+
+    Optional<User> findByGoogleId(String googleId);
+    void updateSocialId(UUID userId, String provider, String socialId);
 }

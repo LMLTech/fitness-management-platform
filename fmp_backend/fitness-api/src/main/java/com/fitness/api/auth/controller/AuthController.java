@@ -8,6 +8,7 @@ import com.fitness.core.auth.domain.AuthResult;
 import com.fitness.core.auth.port.in.IAuthUseCase;
 import com.fitness.core.auth.port.in.LoginCommand;
 import com.fitness.core.auth.port.in.RegisterCommand;
+import com.fitness.core.auth.port.in.SocialLoginCommand;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -87,5 +88,10 @@ public class AuthController {
                         "Đã kích hoạt bảo mật 2 lớp thành công!"
                 )
         );
+    }
+    @PostMapping("/social-login")
+    public ResponseEntity<ApiResponse<Map<String, String>>> socialLogin(@RequestBody SocialLoginCommand command) {
+        String token = authUseCase.socialLogin(command);
+        return ResponseEntity.ok(ApiResponse.success(Map.of("accessToken", token), "Đăng nhập Social thành công!"));
     }
 }
