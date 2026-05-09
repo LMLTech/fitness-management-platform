@@ -1,15 +1,20 @@
 package com.fitness.api.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration // Khai báo class config cho Spring
 @EnableWebSecurity // Bật Spring Security
+@RequiredArgsConstructor // inject filter
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -36,7 +41,9 @@ public class SecurityConfig {
                         // Tất cả API khác bắt buộc phải đăng nhập có token
                         .anyRequest()
                         .authenticated()
-                );
+                )
+                // Lắp máy quét JWT trước khi Spring Security kiểm tra quyền
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }

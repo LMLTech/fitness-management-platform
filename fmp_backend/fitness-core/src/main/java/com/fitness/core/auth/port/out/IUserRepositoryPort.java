@@ -20,4 +20,8 @@ public interface IUserRepositoryPort {
 
     Optional<User> findByGoogleId(String googleId);
     void updateSocialId(UUID userId, String provider, String socialId);
+
+    //  Cập nhật thông tin chi tiết của người dùng
+    void updateProfile(User user);
+    void updatePassword(UUID id, String hash);
 }

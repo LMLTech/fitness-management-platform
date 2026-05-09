@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
-
 import java.util.Optional;
 
 @Component
@@ -40,15 +39,16 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
                 .phoneNumber(user.getPhoneNumber())
                 .passwordHash(user.getPasswordHash())
                 .fullName(user.getFullName())
+                .avatarUrl(user.getAvatarUrl())
+                .gender(user.getGender())
                 .status(user.getStatus())
                 .is2faEnabled(false)
-                .twoFactorSecret(null)
+                .googleId(user.getGoogleId())
                 .build();
-
-        // 2. Lưu User và ép Hibernate đẩy dữ liệu xuống DB ngay lập tức
+        // Save user trước
         UserJpaEntity savedUser = userRepository.saveAndFlush(userEntity);
 
-        // 3. Map Domain Member -> JPA Entity và lưu
+        // Save member gắn với user
         MemberJpaEntity memberEntity = MemberJpaEntity.builder()
                 .user(savedUser)
                 .memberCode(member.getMemberCode())
@@ -56,22 +56,26 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
                 .build();
         memberRepository.save(memberEntity);
 
-        // 4. Map ngược từ "savedUser" (đã có ID và createdAt) sang Domain User
         return mapToDomain(savedUser);
     }
 
+    // READ METHODS
     @Override
     public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .map(this::mapToDomain);
+        return userRepository.findByEmail(email).map(this::mapToDomain);
     }
 
     @Override
     public Optional<User> findById(UUID userId) {
-        return userRepository.findById(userId)
-                .map(this::mapToDomain);
+        return userRepository.findById(userId).map(this::mapToDomain);
     }
 
+    @Override
+    public Optional<User> findByGoogleId(String googleId) {
+        return userRepository.findByGoogleId(googleId).map(this::mapToDomain);
+    }
+
+    // 2FA METHODS
     @Override
     @Transactional
     public void update2FASecret(UUID userId, String secret) {
@@ -90,11 +94,7 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
         });
     }
 
-    @Override
-    public Optional<User> findByGoogleId(String googleId) {
-        return userRepository.findByGoogleId(googleId).map(this::mapToDomain);
-    }
-
+    // SOCIAL LOGIN UPDATE
     @Override
     @Transactional
     public void updateSocialId(UUID userId, String provider, String socialId) {
@@ -102,11 +102,36 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
             if ("GOOGLE".equalsIgnoreCase(provider)) {
                 userEntity.setGoogleId(socialId);
             }
-            userRepository.save(userEntity); // Lưu thay đổi vào DB
+            userRepository.save(userEntity);
         });
     }
 
-    // Helper method để map dữ liệu đồng nhất
+    // PROFILE UPDATE
+    @Override
+    @Transactional
+    public void updateProfile(User user) {
+        userRepository.findById(user.getId()).ifPresent(userEntity -> {
+            userEntity.setFullName(user.getFullName());
+            userEntity.setPhoneNumber(user.getPhoneNumber());
+            userEntity.setUsername(user.getUsername());
+            userEntity.setAvatarUrl(user.getAvatarUrl());
+            userEntity.setGender(user.getGender());
+
+            userRepository.save(userEntity);
+        });
+    }
+
+    // PASSWORD UPDATE
+    @Override
+    @Transactional
+    public void updatePassword(UUID id, String hash) {
+        userRepository.findById(id).ifPresent(userEntity -> {
+            userEntity.setPasswordHash(hash);
+            userRepository.save(userEntity);
+        });
+    }
+
+    // MAPPER: JPA -> DOMAIN
     private User mapToDomain(UserJpaEntity entity) {
         return User.builder()
                 .id(entity.getId())
@@ -115,11 +140,14 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
                 .phoneNumber(entity.getPhoneNumber())
                 .passwordHash(entity.getPasswordHash())
                 .fullName(entity.getFullName())
+                .avatarUrl(entity.getAvatarUrl())
+                .gender(entity.getGender())
                 .status(entity.getStatus())
                 .is2faEnabled(entity.getIs2faEnabled())
                 .twoFactorSecret(entity.getTwoFactorSecret())
                 .googleId(entity.getGoogleId())
-                .createdAt(entity.getCreatedAt()) // Lấy giá trị đã được DB sinh ra
+                .createdAt(entity.getCreatedAt())
+                .deletedAt(entity.getDeletedAt())
                 .build();
     }
 }

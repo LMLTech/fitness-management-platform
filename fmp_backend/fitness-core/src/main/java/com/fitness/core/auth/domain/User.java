@@ -23,7 +23,6 @@ public class User {
     private String gender;
     private String status;
     private String googleId;
-    private String facebookId;
     private Boolean is2faEnabled;
     private String twoFactorSecret;
     private LocalDateTime createdAt;

@@ -1,6 +1,7 @@
 package com.fitness.infrastructure.security;
-
+// Import entity User để lấy thông tin user tạo token
 import com.fitness.core.auth.domain.User;
+// Interface port để implement theo Clean Architecture
 import com.fitness.core.auth.port.out.IJwtTokenPort;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -22,6 +23,7 @@ public class JwtTokenAdapter implements IJwtTokenPort {
     @Value("${jwt.expiration}")
     private long expiration;
 
+    // TẠO TOKEN
     @Override
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
@@ -37,5 +39,28 @@ public class JwtTokenAdapter implements IJwtTokenPort {
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
+    }
+    // LẤY EMAIL TỪ TOKEN
+    @Override
+    public String getEmailFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject();
+    }
+    // KIỂM TRA TOKEN CÓ HỢP LỆ KHÔNG
+    @Override
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder()
+                    .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
+                    .build()
+                    .parseClaimsJws(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
