@@ -29,14 +29,15 @@ public class JwtTokenAdapter implements IJwtTokenPort {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("fullName", user.getFullName());
+        claims.put("roles", user.getRoles()); // Nhồi roles vào JWT
 
         Key key = Keys.hmacShaKeyFor(secretKey.getBytes());
 
         return Jwts.builder()
                 .setClaims(claims)
-                .setSubject(user.getEmail())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .setSubject(user.getEmail()) // email làm subject
+                .setIssuedAt(new Date()) // thời gian tạo
+                .setExpiration(new Date(System.currentTimeMillis() + expiration)) // thời gian hết hạn
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -62,5 +63,14 @@ public class JwtTokenAdapter implements IJwtTokenPort {
         } catch (Exception e) {
             return false;
         }
+    }
+    @Override
+    public java.util.List<String> getRolesFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(io.jsonwebtoken.security.Keys.hmacShaKeyFor(secretKey.getBytes()))
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("roles", java.util.List.class); // Lấy cục roles đã nhồi vào lúc generate
     }
 }

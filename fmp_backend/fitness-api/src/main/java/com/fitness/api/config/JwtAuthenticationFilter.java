@@ -34,9 +34,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtTokenPort.validateToken(token)) {
                 String email = jwtTokenPort.getEmailFromToken(token);
 
-                // Nếu đúng báo cho Spring Security biết "Người dùng này đã OK"
+                // Bóc roles từ token và chuyển thành Authority của Spring
+                java.util.List<String> roles = jwtTokenPort.getRolesFromToken(token);
+                java.util.List<org.springframework.security.core.authority.SimpleGrantedAuthority> authorities =
+                        roles != null ? roles.stream()
+                                        .map(org.springframework.security.core.authority.SimpleGrantedAuthority::new)
+                                        .toList() : java.util.Collections.emptyList();
+
+                // Truyền authorities vào đây thay vì emptyList
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        email, null, Collections.emptyList()
+                        email, null, authorities
                 );
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }

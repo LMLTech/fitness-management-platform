@@ -27,4 +27,6 @@ public class User {
     private String twoFactorSecret;
     private LocalDateTime createdAt;
     private LocalDateTime deletedAt;
+    // Thêm vào class User.java
+    private java.util.Set<String> roles; // Chỉ lưu String {"ROLE_ADMIN", "ROLE_MEMBER"}
 }

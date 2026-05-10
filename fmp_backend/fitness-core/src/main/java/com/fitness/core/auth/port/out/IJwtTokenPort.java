@@ -7,4 +7,5 @@ public interface IJwtTokenPort {
 
     String getEmailFromToken(String token);
     boolean validateToken(String token);
+    java.util.List<String> getRolesFromToken(String token);
 }

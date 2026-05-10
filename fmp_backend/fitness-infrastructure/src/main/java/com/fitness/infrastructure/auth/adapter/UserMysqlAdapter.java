@@ -12,6 +12,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 import java.util.Optional;
+import com.fitness.infrastructure.auth.entity.RoleJpaEntity;
+import java.util.Set;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -133,6 +137,14 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
 
     // MAPPER: JPA -> DOMAIN
     private User mapToDomain(UserJpaEntity entity) {
+        // Lấy danh sách role từ Set<RoleJpaEntity> -> Set<String>
+        Set<String> roleNames = entity.getRoles() != null
+                ? entity.getRoles()
+                  .stream()
+                  .map(RoleJpaEntity::getName)
+                  .collect(Collectors.toSet())
+                : Collections.emptySet();
+
         return User.builder()
                 .id(entity.getId())
                 .username(entity.getUsername())
@@ -143,6 +155,7 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
                 .avatarUrl(entity.getAvatarUrl())
                 .gender(entity.getGender())
                 .status(entity.getStatus())
+                .roles(roleNames) // GÁN ROLE
                 .is2faEnabled(entity.getIs2faEnabled())
                 .twoFactorSecret(entity.getTwoFactorSecret())
                 .googleId(entity.getGoogleId())
