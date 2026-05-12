@@ -18,7 +18,7 @@ import java.util.UUID;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/v1/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
     private final IAuthUseCase authUseCase;

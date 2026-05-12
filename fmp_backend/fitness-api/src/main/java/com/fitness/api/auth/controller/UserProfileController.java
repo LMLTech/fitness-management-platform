@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/v1/users/me")
+@RequestMapping("/api/v1/users/me")
 @RequiredArgsConstructor
 public class UserProfileController {
     private final IProfileUseCase profileUseCase;

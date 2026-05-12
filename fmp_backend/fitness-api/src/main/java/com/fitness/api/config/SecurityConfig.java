@@ -25,11 +25,16 @@ public class SecurityConfig {
                 // Tắt CSRF vì đây là API
                 .csrf(AbstractHttpConfigurer::disable)
 
+                // Bắt buộc dùng Stateless cho JWT
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS)
+                )
+
                 // Cấu hình phân quyền request
                 .authorizeHttpRequests(auth -> auth
 
                         // Cho phép toàn bộ API đăng ký / đăng nhập không cần token
-                        .requestMatchers("/v1/auth/**")
+                        .requestMatchers("/api/v1/auth/**")
                         .permitAll()
 
                         // Swagger UI + OpenAPI
