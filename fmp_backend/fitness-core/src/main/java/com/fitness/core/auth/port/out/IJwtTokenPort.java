@@ -1,5 +1,5 @@
 package com.fitness.core.auth.port.out;
-
+import java.util.List;
 import com.fitness.core.auth.domain.User;
 
 public interface IJwtTokenPort {
@@ -7,5 +7,6 @@ public interface IJwtTokenPort {
 
     String getEmailFromToken(String token);
     boolean validateToken(String token);
-    java.util.List<String> getRolesFromToken(String token);
+
+    List<String> getRolesFromToken(String token);
 }
