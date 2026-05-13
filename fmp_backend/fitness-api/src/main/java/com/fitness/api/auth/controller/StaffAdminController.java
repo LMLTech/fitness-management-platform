@@ -4,6 +4,7 @@ import com.fitness.common.response.ApiResponse;
 import com.fitness.core.auth.domain.Staff;
 import com.fitness.core.auth.port.in.IStaffUseCase;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,13 +18,17 @@ public class StaffAdminController {
 
     private final IStaffUseCase staffUseCase;
 
+    // Lấy mật khẩu từ file config
+    @Value("${app.default-password}")
+    private String defaultPassword;
+
     @PostMapping
     public ResponseEntity<ApiResponse<Staff>> createStaff(
             @RequestBody Staff staffRequest,
             @RequestParam(required = false) String shift) {
 
         // 1. Thực hiện nghiệp vụ tạo nhân viên mật khẩu mặc định sau này đổi sau
-        Staff created = staffUseCase.createStaff(staffRequest, shift, "staff123");
+        Staff created = staffUseCase.createStaff(staffRequest, shift, defaultPassword);
 
         // 2. bảo mật API
         if (created != null && created.getUser() != null) {
