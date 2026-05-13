@@ -43,6 +43,7 @@ public class JwtTokenAdapter implements IJwtTokenPort {
     }
     // LẤY EMAIL TỪ TOKEN
     @Override
+    @SuppressWarnings("unchecked")
     public String getEmailFromToken(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
