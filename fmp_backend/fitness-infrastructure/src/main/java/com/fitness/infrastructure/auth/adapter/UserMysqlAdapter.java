@@ -5,14 +5,17 @@ import com.fitness.core.auth.domain.User;
 import com.fitness.core.auth.port.out.IUserRepositoryPort;
 import com.fitness.infrastructure.auth.entity.MemberJpaEntity;
 import com.fitness.infrastructure.auth.entity.UserJpaEntity;
+import com.fitness.infrastructure.auth.entity.RoleJpaEntity;
 import com.fitness.infrastructure.auth.repository.MemberJpaRepository;
 import com.fitness.infrastructure.auth.repository.UserJpaRepository;
+import com.fitness.infrastructure.auth.repository.RoleJpaRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.UUID;
 import java.util.Optional;
-import com.fitness.infrastructure.auth.entity.RoleJpaEntity;
 import java.util.Set;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -23,6 +26,7 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
 
     private final UserJpaRepository userRepository;
     private final MemberJpaRepository memberRepository;
+    private final RoleJpaRepository roleRepository;
 
     @Override
     public boolean existsByEmail(String email) { return userRepository.existsByEmail(email); }
@@ -61,6 +65,46 @@ public class UserMysqlAdapter implements IUserRepositoryPort {
         memberRepository.save(memberEntity);
 
         return mapToDomain(savedUser);
+    }
+    // hàm lưu User mà không liên quan gì đến bảng Member
+    @Override
+    @Transactional
+    public User saveUserOnly(User user) {
+        UserJpaEntity userEntity = UserJpaEntity.builder()
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .phoneNumber(user.getPhoneNumber())
+                .passwordHash(user.getPasswordHash())
+                .fullName(user.getFullName())
+                .status(user.getStatus())
+                .avatarUrl(user.getAvatarUrl())
+                .gender(user.getGender())
+                .is2faEnabled(false)
+                .build();
+        // Dùng saveAndFlush thay vì save
+        UserJpaEntity saved = userRepository.saveAndFlush(userEntity);
+        return mapToDomain(saved);
+    }
+
+    // hàm gán quyền
+    @Override
+    @Transactional
+    public void assignRoleToUser(UUID userId, String roleName) {
+        // Tìm Role trong bảng roles
+        RoleJpaEntity role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role " + roleName + " không tồn tại"));
+
+        // Tìm User
+        UserJpaEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User không tồn tại"));
+
+        // Kiểm tra túi roles, nếu null thì tạo mới
+        if (user.getRoles() == null) {
+            user.setRoles(new java.util.HashSet<>());
+        }
+        // Gán role vào set roles của user JPA sẽ tự insert vào bảng user_roles
+        user.getRoles().add(role);
+        userRepository.save(user);
     }
 
     // READ METHODS

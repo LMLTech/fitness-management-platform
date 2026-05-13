@@ -70,9 +70,11 @@ public class UserJpaEntity {
     // Thêm Set roles
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "user_roles", // Tên bảng trung gian
+            name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private java.util.Set<RoleJpaEntity> roles;
+    @Builder.Default
+    // KHỞI TẠO LUÔN HashSet để không bao giờ bị Null
+    private java.util.Set<RoleJpaEntity> roles = new java.util.HashSet<>();
 }

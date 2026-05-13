@@ -45,37 +45,37 @@ public class UserProfileController {
     }
 
     // CÁC HÀM TEST PHÂN QUYỀN
-    // 1. Chỉ Admin mới vào được
+    // 1. Chỉ Admin
     @GetMapping("/test-admin")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<String>> testAdmin() {
-        return ResponseEntity.ok(ApiResponse.success("SUCCESS", "Xin chào Quản trị viên!"));
+        return ResponseEntity.ok(ApiResponse.success("SUCCESS", "Chào Quản trị viên!"));
     }
 
-    // 2. Chỉ Huấn luyện viên (Trainer) mới vào được
+    // 2. Chỉ PT
     @GetMapping("/test-trainer")
-    @PreAuthorize("hasRole('TRAINER')")
+    @PreAuthorize("hasAuthority('ROLE_TRAINER')")
     public ResponseEntity<ApiResponse<String>> testTrainer() {
-        return ResponseEntity.ok(ApiResponse.success("SUCCESS", "Xin chào Huấn luyện viên (PT)!"));
+        return ResponseEntity.ok(ApiResponse.success("SUCCESS", "Chào Huấn luyện viên!"));
     }
 
-    // 3. Chỉ Lễ tân mới vào được
+    // 3. Chỉ Lễ tân
     @GetMapping("/test-receptionist")
-    @PreAuthorize("hasRole('RECEPTIONIST')")
+    @PreAuthorize("hasAuthority('ROLE_RECEPTIONIST')")
     public ResponseEntity<ApiResponse<String>> testReceptionist() {
-        return ResponseEntity.ok(ApiResponse.success("SUCCESS", "Xin chào Lễ tân phòng tập!"));
+        return ResponseEntity.ok(ApiResponse.success("SUCCESS", "Chào Lễ tân!"));
     }
 
-    // 4. Chỉ Hội viên chính thức mới vào được
+    // 4. Chỉ Hội viên
     @GetMapping("/test-member")
-    @PreAuthorize("hasRole('MEMBER')")
+    @PreAuthorize("hasAuthority('ROLE_MEMBER')")
     public ResponseEntity<ApiResponse<String>> testMember() {
-        return ResponseEntity.ok(ApiResponse.success("SUCCESS", "Xin chào Hội viên chính thức!"));
+        return ResponseEntity.ok(ApiResponse.success("SUCCESS", "Chào Hội viên!"));
     }
 
-    // 5. Test đa quyền: Admin HOẶC Lễ tân đều vào được
+    // 5. Khu vực nhân viên (Admin, Lễ tân, PT, Staff đều vào được)
     @GetMapping("/test-staff")
-    @PreAuthorize("hasAnyRole('ADMIN', 'RECEPTIONIST')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_RECEPTIONIST', 'ROLE_TRAINER', 'ROLE_STAFF')")
     public ResponseEntity<ApiResponse<String>> testStaffOnly() {
         return ResponseEntity.ok(ApiResponse.success("SUCCESS", "Khu vực dành cho nhân viên vận hành."));
     }
