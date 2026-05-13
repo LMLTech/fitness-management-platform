@@ -35,3 +35,6 @@ server:
 jwt:
   secret: ${JWT_SECRET}
   expiration: 86400000 # 24h
+
+app:
+  default-password: ${app.default-password}
