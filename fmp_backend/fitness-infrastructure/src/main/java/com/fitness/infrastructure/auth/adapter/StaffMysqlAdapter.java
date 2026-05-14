@@ -10,6 +10,9 @@ import com.fitness.infrastructure.auth.repository.ReceptionistJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+import java.util.UUID;
+
 @Component
 @RequiredArgsConstructor
 public class StaffMysqlAdapter implements IStaffRepositoryPort {
@@ -37,5 +40,16 @@ public class StaffMysqlAdapter implements IStaffRepositoryPort {
     @Override
     public boolean existsByEmployeeId(String employeeId) {
         return staffRepo.existsByEmployeeId(employeeId);
+    }
+
+    @Override
+    public Optional<Staff> findByUserId(UUID userId) {
+        // Tìm trong DB staffRepo sử dụng userId làm Khóa chính
+        return staffRepo.findById(userId).map(entity -> Staff.builder()
+                .userId(entity.getUserId())
+                .branchId(entity.getBranchId())
+                .employeeId(entity.getEmployeeId())
+                .jobTitle(entity.getJobTitle())
+                .build());
     }
 }
