@@ -5,6 +5,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface IPaymentRepositoryPort {
-    Payment save(Payment payment);
-    Optional<Payment> findById(UUID id);
+    Payment save(Payment payment);  // Lưu payment mới hoặc cập nhật payment
+    Optional<Payment> findById(UUID id); // Tìm payment theo UUID đầy đủ
+    // Tìm payment trạng thái PENDING bằng phần đầu UUID dùng khi user nhập mã ngắn
+    Optional<Payment> findPendingPaymentByUuidPrefix(String prefix);
 }

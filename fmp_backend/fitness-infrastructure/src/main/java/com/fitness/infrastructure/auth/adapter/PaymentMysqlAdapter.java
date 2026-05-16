@@ -50,4 +50,20 @@ public class PaymentMysqlAdapter implements IPaymentRepositoryPort {
                 .createdAt(entity.getCreatedAt())
                 .build();
     }
+
+    @Override
+    public Optional<Payment> findPendingPaymentByUuidPrefix(String prefix) {
+        return repository.findPendingPaymentByUuidPrefix(prefix).map(entity ->
+                Payment.builder()
+                        .id(entity.getId())
+                        .userId(entity.getUserId())
+                        .subscriptionId(entity.getSubscriptionId())
+                        .amount(entity.getAmount())
+                        .paymentMethod(entity.getPaymentMethod())
+                        .status(entity.getStatus())
+                        .transactionCode(entity.getTransactionCode())
+                        .createdAt(entity.getCreatedAt())
+                        .build()
+        );
+    }
 }
