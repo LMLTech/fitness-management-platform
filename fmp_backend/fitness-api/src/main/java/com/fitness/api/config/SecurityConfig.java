@@ -37,6 +37,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**")
                         .permitAll()
 
+                        // Cho phép cổng Webhook nhận dữ liệu tự động không cần JWT Token
+                        .requestMatchers("/api/v1/payments/confirmation/webhook")
+                        .permitAll()
+
                         // Swagger UI + OpenAPI
                         .requestMatchers(
                                 "/swagger-ui/**",      // giao diện swagger

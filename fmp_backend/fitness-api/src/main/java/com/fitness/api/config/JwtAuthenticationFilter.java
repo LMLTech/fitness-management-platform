@@ -24,6 +24,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        // Nếu là đường dẫn Webhook thì cho đi thẳng, bỏ qua toàn bộ logic quét JWT ở dưới
+        if ("/api/v1/payments/confirmation/webhook".equals(request.getServletPath())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         // Lấy chuỗi "Authorization" từ Header
         String authHeader = request.getHeader("Authorization");
 
