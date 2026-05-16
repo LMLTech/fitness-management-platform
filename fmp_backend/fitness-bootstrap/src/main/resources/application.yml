@@ -36,5 +36,17 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: 86400000 # 24h
 
+#cấu hình app
 app:
+  # cấu hình mật khẩu staff
   default-password: ${app.default-password}
+  # Cấu hình thanh toán
+  payment:
+    #ngân hàng
+    bank:
+      bin: ${PAYMENT_BANK_BIN}
+      account-no: ${PAYMENT_BANK_ACCOUNT_NO}
+      account-name: ${PAYMENT_BANK_ACCOUNT_NAME}
+    #momo
+    momo:
+      account-name: ${PAYMENT_MOMO_ACCOUNT}
