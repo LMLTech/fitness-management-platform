@@ -3,15 +3,16 @@ package com.fitness.core.auth.service;
 import com.fitness.core.auth.domain.Booking;
 import com.fitness.core.auth.domain.ClassSession;
 import com.fitness.core.auth.domain.Subscription;
+import com.fitness.core.auth.domain.WaitingList;
 import com.fitness.core.auth.port.in.IBookingUseCase;
 import com.fitness.core.auth.port.out.IBookingRepositoryPort;
 import com.fitness.core.auth.port.out.IClassSessionRepositoryPort;
 import com.fitness.core.auth.port.out.ISubscriptionRepositoryPort;
+import com.fitness.core.auth.port.out.IWaitingListRepositoryPort;
 import com.fitness.core.common.exception.DomainException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,9 +23,10 @@ public class BookingService implements IBookingUseCase {
     private final IBookingRepositoryPort bookingRepoPort;
     private final IClassSessionRepositoryPort sessionRepoPort;
     private final ISubscriptionRepositoryPort subscriptionRepoPort;
+    private final IWaitingListRepositoryPort waitingListRepoPort;
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = DomainException.class)
     public Booking bookClassSession(UUID memberUserId, UUID sessionId) {
 
         // 1. Kiểm tra buổi học có tồn tại không
@@ -56,8 +58,22 @@ public class BookingService implements IBookingUseCase {
         // 5. KIỂM TRA SỨC CHỨA: Đếm số lượng slot hiện tại
         long currentBookings = bookingRepoPort.countConfirmedBookings(sessionId);
         if (currentBookings >= session.getMaxCapacity()) {
-            // Tạm thời báo lỗi đầy lớp flow 19 sẽ nâng cấp đoạn này lên thành đưa vào danh sách chờ Waitlist
-            throw new DomainException("CLASS_FULL", "Lớp học đã đạt số lượng học viên tối đa, không thể đặt thêm chỗ");
+
+            // Hệ thống tự động đẩy học viên vào hàng chờ nếu lớp đã full slot
+            if (waitingListRepoPort.isMemberInWaitlist(memberUserId, sessionId)) {
+                throw new DomainException("ALREADY_IN_WAITLIST", "Lớp đã đầy và bạn đã nằm trong danh sách chờ của lớp này rồi");
+            }
+
+            int nextPosition = waitingListRepoPort.getMaxPosition(sessionId) + 1;
+            WaitingList waitEntry = WaitingList.builder()
+                    .memberId(memberUserId)
+                    .sessionId(sessionId)
+                    .position(nextPosition)
+                    .status("Waiting")
+                    .build();
+            waitingListRepoPort.save(waitEntry);
+
+            throw new DomainException("ADDED_TO_WAITLIST", "Lớp học hiện tại đã đầy slot! Hệ thống đã tự động đưa bạn vào danh sách chờ ở vị trí số " + nextPosition);
         }
 
         // 6. Lưu thông tin đặt chỗ thành công

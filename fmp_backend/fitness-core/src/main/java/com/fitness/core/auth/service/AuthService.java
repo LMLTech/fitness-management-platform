@@ -73,6 +73,9 @@ public class AuthService implements IAuthUseCase {
         // Lưu và nhận về User đã có ID và createdAt từ DB
         User savedUser = userRepositoryPort.saveUserAndMember(newUser, newMember);
 
+        // đăng ký user thành member khỏi gán vai trò trong database
+        this.userRepositoryPort.assignRoleToUser(savedUser.getId(), "ROLE_MEMBER");
+
         return AuthResult.builder()
                 .user(savedUser)
                 .member(newMember)
@@ -189,6 +192,8 @@ public class AuthService implements IAuthUseCase {
                 .build();
 
         User savedUser = userRepositoryPort.saveUserAndMember(socialUser, newMember);
+        // đăng nhập google user thành member
+        this.userRepositoryPort.assignRoleToUser(savedUser.getId(), "ROLE_MEMBER");
         return jwtTokenPort.generateToken(savedUser);
     }
 }
