@@ -41,6 +41,19 @@ public class BookingMysqlAdapter implements IBookingRepositoryPort {
                 .build());
     }
 
+    // LUỒNG CHECK-IN (FLOW 20)
+    @Override
+    public Optional<Booking> findByMemberIdAndSessionId(UUID memberId, UUID sessionId) {
+        return jpaRepository.findByMemberIdAndSessionIdAndDeletedAtIsNull(memberId, sessionId)
+                .map(entity -> Booking.builder()
+                        .id(entity.getId())
+                        .memberId(entity.getMemberId())
+                        .sessionId(entity.getSessionId())
+                        .status(entity.getStatus())
+                        .checkedInAt(entity.getCheckedInAt())
+                        .build());
+    }
+
     @Override
     public long countConfirmedBookings(UUID sessionId) {
         return jpaRepository.countBySessionIdAndStatusAndDeletedAtIsNull(sessionId, "Confirmed");

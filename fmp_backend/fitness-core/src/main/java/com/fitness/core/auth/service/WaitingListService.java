@@ -39,7 +39,7 @@ public class WaitingListService implements IWaitingListUseCase {
         booking.setStatus("Cancelled");
         bookingRepoPort.save(booking);
 
-        // 3. 🟢 THUẬT TOÁN ĐÔN HÀNG CHỜ: Tìm người đứng đầu danh sách chờ của buổi học này
+        // 3. THUẬT TOÁN ĐÔN HÀNG CHỜ: Tìm người đứng đầu danh sách chờ của buổi học này
         waitingListRepoPort.getFirstInQueue(booking.getSessionId()).ifPresent(firstWait -> {
 
             // Đổi trạng thái hàng chờ của người đó sang Promoted
