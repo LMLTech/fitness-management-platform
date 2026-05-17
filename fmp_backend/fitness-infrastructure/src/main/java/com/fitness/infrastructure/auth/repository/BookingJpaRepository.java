@@ -4,6 +4,7 @@ import com.fitness.infrastructure.auth.entity.BookingJpaEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.UUID;
+import java.util.Optional;
 
 @Repository
 public interface BookingJpaRepository extends JpaRepository<BookingJpaEntity, UUID> {
@@ -13,4 +14,6 @@ public interface BookingJpaRepository extends JpaRepository<BookingJpaEntity, UU
 
     // Kiểm tra xem hội viên này đã đặt chỗ buổi học này trước đó chưa
     boolean existsByMemberIdAndSessionIdAndStatusAndDeletedAtIsNull(UUID memberId, UUID sessionId, String status);
+
+    Optional<BookingJpaEntity> findByMemberIdAndSessionIdAndDeletedAtIsNull(UUID memberId, UUID sessionId);
 }

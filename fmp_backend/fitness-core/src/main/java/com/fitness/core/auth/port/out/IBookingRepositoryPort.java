@@ -9,4 +9,6 @@ public interface IBookingRepositoryPort {
     Optional<Booking> findById(UUID id);
     long countConfirmedBookings(UUID sessionId);
     boolean hasMemberBooked(UUID memberId, UUID sessionId);
+
+    java.util.Optional<com.fitness.core.auth.domain.Booking> findByMemberIdAndSessionId(UUID memberId, UUID sessionId);
 }
