@@ -7,16 +7,17 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Payment {
     private UUID id;
-    private UUID userId;
-    private UUID subscriptionId;
+    private UUID userId;          // Để lưu thông tin người thanh toán
+    private UUID subscriptionId;  // Dành cho luồng mua gói tập
+    private UUID orderId;
     private BigDecimal amount;
-    private String paymentMethod; // 'CreditCard', 'VNPay', 'MoMo', 'Cash'
-    private String status;        // 'Pending', 'Success', 'Failed'
+    private String status;
+    private String paymentMethod;
     private String transactionCode;
     private LocalDateTime createdAt;
 }

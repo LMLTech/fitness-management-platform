@@ -23,7 +23,9 @@ public class PaymentConfirmationController {
             @RequestBody AutomatedWebhookRequest request) {
 
         confirmationUseCase.confirmPaymentAutomatically(request.getDescription(), request.getGatewayReference(), webhookToken);
-        return ResponseEntity.ok(ApiResponse.success(null, "Hệ thống tự động kích hoạt hợp đồng gói tập thành công!"));
+
+        // CHUẨN HÓA THÔNG BÁO WEBHOOK: Chuẩn tổng quát bao thầu cho cả kích hoạt Gói tập lẫn cập nhật Đơn hàng
+        return ResponseEntity.ok(ApiResponse.success(null, "Xác nhận thanh toán tự động và cập nhật trạng thái hệ thống thành công!"));
     }
 
     // API Cho phép Lễ tân hoặc Admin duyệt đóng tiền mặt trực tiếp tại quầy phòng Gym
@@ -32,6 +34,8 @@ public class PaymentConfirmationController {
     public ResponseEntity<ApiResponse<Void>> handleManualConfirmation(@RequestBody ManualConfirmationRequest request) {
 
         confirmationUseCase.confirmPaymentManually(request.getPaymentId(), request.getReferenceNote());
-        return ResponseEntity.ok(ApiResponse.success(null, "Xác nhận hóa đơn và kích hoạt gói tập thủ công thành công!"));
+
+        //  CHUẨN HÓA THÔNG BÁO TẠI QUẦY: Chuẩn nghiệp vụ đối soát kế toán cho cả 2 phân hệ mua hàng/mua gói
+        return ResponseEntity.ok(ApiResponse.success(null, "Xác nhận hóa đơn và cập nhật trạng thái giao dịch thủ công thành công!"));
     }
 }

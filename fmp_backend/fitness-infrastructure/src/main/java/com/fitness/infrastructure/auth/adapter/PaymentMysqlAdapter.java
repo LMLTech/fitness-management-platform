@@ -16,12 +16,20 @@ public class PaymentMysqlAdapter implements IPaymentRepositoryPort {
 
     private final PaymentJpaRepository repository;
 
+    //  luồng mua gói tập (Subscriptions)
     @Override
     public Payment save(Payment domain) {
+        return savePayment(domain);
+    }
+
+    //  phục vụ đúng chuẩn hàm gọi từ OrderService của Flow 24
+    @Override
+    public Payment savePayment(Payment domain) {
         PaymentJpaEntity entity = PaymentJpaEntity.builder()
                 .id(domain.getId())
                 .userId(domain.getUserId())
                 .subscriptionId(domain.getSubscriptionId())
+                .orderId(domain.getOrderId()) // Mapping orderId sang DB Entity
                 .amount(domain.getAmount())
                 .paymentMethod(domain.getPaymentMethod())
                 .status(domain.getStatus())
@@ -43,6 +51,7 @@ public class PaymentMysqlAdapter implements IPaymentRepositoryPort {
                 .id(entity.getId())
                 .userId(entity.getUserId())
                 .subscriptionId(entity.getSubscriptionId())
+                .orderId(entity.getOrderId()) // Mapping orderId ngược lại Domain
                 .amount(entity.getAmount())
                 .paymentMethod(entity.getPaymentMethod())
                 .status(entity.getStatus())
@@ -58,6 +67,7 @@ public class PaymentMysqlAdapter implements IPaymentRepositoryPort {
                         .id(entity.getId())
                         .userId(entity.getUserId())
                         .subscriptionId(entity.getSubscriptionId())
+                        .orderId(entity.getOrderId()) // Mapping orderId luồng tìm kiếm webhook
                         .amount(entity.getAmount())
                         .paymentMethod(entity.getPaymentMethod())
                         .status(entity.getStatus())
