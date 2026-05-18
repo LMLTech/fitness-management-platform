@@ -38,4 +38,7 @@ public class PaymentJpaEntity {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "order_id")
+    private UUID orderId;
 }

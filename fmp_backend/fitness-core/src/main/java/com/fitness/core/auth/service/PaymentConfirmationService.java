@@ -2,6 +2,8 @@ package com.fitness.core.auth.service;
 
 import com.fitness.core.auth.domain.MembershipPlan;
 import com.fitness.core.auth.domain.Payment;
+import com.fitness.core.auth.domain.Order;
+import com.fitness.core.auth.port.out.IOrderRepositoryPort;
 import com.fitness.core.auth.domain.Subscription;
 import com.fitness.core.auth.port.in.IPaymentConfirmationUseCase;
 import com.fitness.core.auth.port.out.IMembershipPlanRepositoryPort;
@@ -22,8 +24,9 @@ public class PaymentConfirmationService implements IPaymentConfirmationUseCase {
     private final IPaymentRepositoryPort paymentRepoPort;
     private final ISubscriptionRepositoryPort subscriptionRepoPort;
     private final IMembershipPlanRepositoryPort membershipPlanRepoPort;
+    private final IOrderRepositoryPort orderRepoPort;
 
-    @Value("${JWT_SECRET}") // Sử dụng lại chuỗi bảo mật hệ thống để verify webhook chống tấn công giả mạo
+    @Value("${JWT_SECRET}") // Sử dụng chuỗi bảo mật hệ thống để verify webhook chống tấn công giả mạo
     private String systemWebhookSecret;
 
     @Override
@@ -67,26 +70,50 @@ public class PaymentConfirmationService implements IPaymentConfirmationUseCase {
         processActivation(payment, "MANUAL_CONFIRM_" + referenceCode.toUpperCase());
     }
 
+    // HÀM NÂNG CẤP PHÂN CHIA VAI TRÒ DÒNG TIỀN: RÕ RÀNG - MINH BẠCH - KHÔNG XUNG ĐỘT
     private void processActivation(Payment payment, String transactionCode) {
-        // Cập nhật trạng thái hóa đơn thanh toán
+        // 1. Cập nhật trạng thái hóa đơn thanh toán thành công chung cho cả hệ thống
         payment.setStatus("Success");
         payment.setTransactionCode(transactionCode);
         paymentRepoPort.save(payment);
 
-        // Truy vấn hợp đồng dịch vụ đính kèm
-        Subscription subscription = subscriptionRepoPort.findById(payment.getSubscriptionId())
-                .orElseThrow(() -> new DomainException("SUBSCRIPTION_NOT_FOUND", "Không tìm thấy hợp đồng dịch vụ đi kèm"));
+        // 2. RẼ NHÁNH NGHIỆP VỤ: MUA GÓI RA MUA GÓI, MUA HÀNG RA MUA HÀNG
 
-        // Truy vấn gói tập thương mại để lấy số tháng hiệu lực cấu hình gốc
-        MembershipPlan plan = membershipPlanRepoPort.findById(subscription.getPlanId())
-                .orElseThrow(() -> new DomainException("PLAN_NOT_FOUND", "Cấu hình gói tập không tồn tại trên hệ thống"));
+        // Luồng A: Nếu tờ hóa đơn này đính kèm mã GÓI TẬP HỘI VIÊN (Subscription)
+        if (payment.getSubscriptionId() != null) {
+            // Truy vấn hợp đồng dịch vụ đính kèm
+            Subscription subscription = subscriptionRepoPort.findById(payment.getSubscriptionId())
+                    .orElseThrow(() -> new DomainException("SUBSCRIPTION_NOT_FOUND", "Không tìm thấy hợp đồng dịch vụ đi kèm"));
 
-        // Thiết lập kích hoạt mốc thời gian thực tế từ ngày đóng tiền thành công
-        LocalDate activatedDate = LocalDate.now();
-        subscription.setStartDate(activatedDate);
-        subscription.setEndDate(activatedDate.plusMonths(plan.getDurationMonths()));
-        subscription.setStatus("Active");
+            // Truy vấn gói tập thương mại để lấy số tháng hiệu lực cấu hình gốc
+            MembershipPlan plan = membershipPlanRepoPort.findById(subscription.getPlanId())
+                    .orElseThrow(() -> new DomainException("PLAN_NOT_FOUND", "Cấu hình gói tập không tồn tại trên hệ thống"));
 
-        subscriptionRepoPort.save(subscription);
+            // Thiết lập kích hoạt mốc thời gian thực tế từ ngày đóng tiền thành công
+            LocalDate activatedDate = LocalDate.now();
+            subscription.setStartDate(activatedDate);
+            subscription.setEndDate(activatedDate.plusMonths(plan.getDurationMonths()));
+            subscription.setStatus("Active");
+
+            subscriptionRepoPort.save(subscription);
+        }
+
+        // Luồng B: Nếu tờ hóa đơn này đính kèm mã ĐƠN HÀNG VẬT LÝ (Product Order từ Giỏ Hàng)
+        else if (payment.getOrderId() != null) {
+            // Truy vấn tờ đơn hàng mua Whey/Nước uống gốc lên
+            Order order = orderRepoPort.findOrderById(payment.getOrderId())
+                    .orElseThrow(() -> new DomainException("ORDER_NOT_FOUND", "Không tìm thấy dữ liệu đơn hàng liên quan đến hóa đơn này"));
+
+            // Cập nhật trạng thái đơn hàng trực tuyến từ PENDING thành COMPLETED (Hoàn tất)
+            order.setOrderStatus("COMPLETED");
+
+            // Lưu trạng thái đơn hàng mới cập nhật xuống cơ sở dữ liệu thật
+            orderRepoPort.saveOrder(order);
+        }
+
+        // Luồng C: Trường hợp phòng hờ nếu hóa đơn lỗi hệ thống thiếu cả 2 liên kết
+        else {
+            throw new DomainException("INVALID_PAYMENT_RELATION", "Hóa đơn thanh toán hợp lệ nhưng không tìm thấy liên kết đến đơn hàng hoặc gói tập");
+        }
     }
 }
