@@ -16,23 +16,21 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EmailCampaignController {
 
-    // UseCase xử lý nghiệp vụ Email Marketing
     private final IEmailCampaignUseCase emailCampaignUseCase;
 
-    // API tạo bản nháp chiến dịch Email Marketing
     @PostMapping
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<EmailCampaign>> createDraft(@RequestBody CreateEmailCampaignDto request) {
 
-        // Chuyển dữ liệu từ DTO sang Domain object
+        // Chuyển dữ liệu từ DTO sang Domain object bằng các trường thuộc tính có ảnh và chữ tách biệt
         EmailCampaign domain = EmailCampaign.builder()
                 .title(request.getTitle())
                 .subject(request.getSubject())
-                .htmlContent(request.getHtmlContent())
+                .imageUrl(request.getImageUrl())
+                .content(request.getContent())
                 .targetAudience(request.getTargetAudience())
                 .build();
 
-        // Lưu bản nháp chiến dịch email
         EmailCampaign created = emailCampaignUseCase.createDraft(domain);
 
         return ResponseEntity.ok(
@@ -40,12 +38,10 @@ public class EmailCampaignController {
         );
     }
 
-    // API gửi chiến dịch Email đến nhóm khách hàng mục tiêu
     @PostMapping("/{id}/send")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<ApiResponse<Void>> sendCampaign(@PathVariable UUID id) {
 
-        // Kích hoạt gửi email hàng loạt theo campaign ID
         emailCampaignUseCase.sendCampaign(id);
 
         return ResponseEntity.ok(

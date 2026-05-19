@@ -20,8 +20,14 @@ public class EmailCampaignEntity {
 
     private String subject;
 
+    @Column(name = "image_url", length = 255)
+    private String imageUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String content;
+
     @Column(name = "html_content", columnDefinition = "LONGTEXT")
-    private String htmlContent;
+    private String htmlContent; // Đây vẫn là nơi lưu cục HTML hoàn chỉnh sau khi ghép ảnh + chữ
 
     @Column(name = "target_audience", length = 50)
     private String targetAudience;
