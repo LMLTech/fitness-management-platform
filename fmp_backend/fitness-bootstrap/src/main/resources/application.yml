@@ -6,6 +6,19 @@ spring:
   config:
     import: file:application-env.properties
 
+  # mail marketing
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   # Cấu hình kết nối MySQL
   datasource:
     url: jdbc:mysql://localhost:${MYSQL_PORT:3308}/${MYSQL_DATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
