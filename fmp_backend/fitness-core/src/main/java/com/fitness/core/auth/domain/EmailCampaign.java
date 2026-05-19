@@ -12,6 +12,8 @@ public class EmailCampaign {
     private UUID id;
     private String title;
     private String subject;
+    private String imageUrl;
+    private String content;
     private String htmlContent;
     private String targetAudience; // VD: 'All_Members', 'Expired_Soon'
     private String status;         // 'Draft', 'Sending', 'Sent'

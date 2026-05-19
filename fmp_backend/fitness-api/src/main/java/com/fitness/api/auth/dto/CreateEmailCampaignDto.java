@@ -8,6 +8,7 @@ import lombok.Setter;
 public class CreateEmailCampaignDto {
     private String title;
     private String subject;
-    private String htmlContent;
+    private String imageUrl;
+    private String content;
     private String targetAudience;
 }
