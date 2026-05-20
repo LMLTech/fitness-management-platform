@@ -21,29 +21,31 @@ public class SupportTicketController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<SupportTicket>> createTicket(@RequestBody CreateTicketDto req) {
+        // Trả lại cách lấy ID từ Request Body để không bị lỗi ép kiểu JWT
         SupportTicket ticket = ticketUseCase.createTicket(
                 req.getUserId(), req.getSubject(), req.getPriority(), req.getInitialMessage()
         );
-        return ResponseEntity.ok(ApiResponse.success(ticket, "Tao phien ho tro khieu nai thanh cong!"));
+        return ResponseEntity.ok(ApiResponse.success(ticket, "Tạo phiên hỗ trợ khiếu nại thành công!"));
     }
 
     @PostMapping("/{ticketId}/messages")
     public ResponseEntity<ApiResponse<TicketMessage>> replyTicket(
             @PathVariable UUID ticketId,
             @RequestBody ReplyTicketDto req) {
+
         TicketMessage message = ticketUseCase.replyToTicket(ticketId, req.getSenderId(), req.getMessage());
-        return ResponseEntity.ok(ApiResponse.success(message, "Gui tin nhan phan hoi thanh cong!"));
+        return ResponseEntity.ok(ApiResponse.success(message, "Gửi tin nhắn phản hồi thành công!"));
     }
 
     @GetMapping("/{ticketId}")
     public ResponseEntity<ApiResponse<SupportTicket>> getTicketDetails(@PathVariable UUID ticketId) {
         SupportTicket ticket = ticketUseCase.getTicketDetails(ticketId);
-        return ResponseEntity.ok(ApiResponse.success(ticket, "Lay chi tiet lich su chat ho tro thanh cong!"));
+        return ResponseEntity.ok(ApiResponse.success(ticket, "Lấy chi tiết lịch sử chat hỗ trợ thành công!"));
     }
 
     @PutMapping("/{ticketId}/resolve")
     public ResponseEntity<ApiResponse<Void>> resolveTicket(@PathVariable UUID ticketId) {
         ticketUseCase.resolveTicket(ticketId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Xu ly va dong ticket thanh cong!"));
+        return ResponseEntity.ok(ApiResponse.success(null, "Xử lý và đóng ticket thành công!"));
     }
 }

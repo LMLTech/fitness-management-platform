@@ -3,6 +3,7 @@ package com.fitness.core.auth.service;
 import com.fitness.core.common.exception.DomainException;
 import com.fitness.core.auth.domain.SupportTicket;
 import com.fitness.core.auth.domain.TicketMessage;
+import com.fitness.core.auth.domain.AuditTrace;
 import com.fitness.core.auth.port.in.ISupportTicketUseCase;
 import com.fitness.core.auth.port.out.ISupportTicketRepositoryPort;
 import lombok.RequiredArgsConstructor;
@@ -44,10 +45,10 @@ public class SupportTicketService implements ISupportTicketUseCase {
     @Transactional
     public TicketMessage replyToTicket(UUID ticketId, UUID senderId, String messageText) {
         SupportTicket ticket = ticketRepoPort.findTicketById(ticketId)
-                .orElseThrow(() -> new DomainException("TICKET_NOT_FOUND", "Khong tim thay phien ho tro ticket"));
+                .orElseThrow(() -> new DomainException("TICKET_NOT_FOUND", "Không tìm thấy phiên hỗ trợ ticket"));
 
         if ("Resolved".equals(ticket.getStatus())) {
-            throw new DomainException("TICKET_CLOSED", "Ticket ho tro nay da duoc giai quyet va dong lai");
+            throw new DomainException("TICKET_CLOSED", "Ticket hỗ trợ này đã được giải quyết và đóng lại");
         }
 
         TicketMessage message = TicketMessage.builder()
@@ -62,9 +63,10 @@ public class SupportTicketService implements ISupportTicketUseCase {
 
     @Override
     @Transactional
+    @AuditTrace(action = "RESOLVE", entityType = "SupportTicket")
     public void resolveTicket(UUID ticketId) {
         SupportTicket ticket = ticketRepoPort.findTicketById(ticketId)
-                .orElseThrow(() -> new DomainException("TICKET_NOT_FOUND", "Khong tim thay phien ho tro ticket"));
+                .orElseThrow(() -> new DomainException("TICKET_NOT_FOUND", "Không tìm thấy phiên hỗ trợ ticket"));
 
         ticket.setStatus("Resolved");
         ticketRepoPort.saveTicket(ticket);
@@ -74,7 +76,7 @@ public class SupportTicketService implements ISupportTicketUseCase {
     @Transactional(readOnly = true)
     public SupportTicket getTicketDetails(UUID ticketId) {
         SupportTicket ticket = ticketRepoPort.findTicketById(ticketId)
-                .orElseThrow(() -> new DomainException("TICKET_NOT_FOUND", "Khong tim thay phien ho tro ticket"));
+                .orElseThrow(() -> new DomainException("TICKET_NOT_FOUND", "Không tìm thấy phiên hỗ trợ ticket"));
 
         ticket.setMessages(ticketRepoPort.findMessagesByTicketId(ticketId));
         return ticket;
