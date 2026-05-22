@@ -5,6 +5,8 @@ import com.fitness.core.auth.port.in.IMembershipPlanUseCase;
 import com.fitness.core.auth.port.out.IMembershipPlanRepositoryPort;
 import com.fitness.core.common.exception.DomainException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,8 @@ public class MembershipPlanService implements IMembershipPlanUseCase {
 
     @Override
     @Transactional
+    // Tạo mới -> Đốt sạch tủ chứa danh sách gói tập
+    @CacheEvict(value = "membership_plans_cache", allEntries = true)
     public MembershipPlan createPlan(MembershipPlan plan) {
         if (repositoryPort.existsByName(plan.getName())) {
             throw new DomainException("PLAN_ALREADY_EXISTS", "Tên gói tập này đã được cấu hình từ trước");
@@ -35,6 +39,8 @@ public class MembershipPlanService implements IMembershipPlanUseCase {
 
     @Override
     @Transactional
+    // Cập nhật thông tin gói tập -> Dữ liệu cũ đã sai -> Đốt sạch tủ
+    @CacheEvict(value = "membership_plans_cache", allEntries = true)
     public MembershipPlan updatePlan(UUID id, MembershipPlan plan) {
         MembershipPlan existing = repositoryPort.findById(id)
                 .orElseThrow(() -> new DomainException("PLAN_NOT_FOUND", "Gói tập không tồn tại hệ thống"));
@@ -57,18 +63,25 @@ public class MembershipPlanService implements IMembershipPlanUseCase {
     }
 
     @Override
+    // Bộ nhớ đệm cho TỪNG GÓI TẬP RIÊNG LẺ (Khách hàng bấm xem chi tiết)
+    @Cacheable(value = "membership_plans_cache", key = "'plan_' + #id")
     public MembershipPlan getPlanById(UUID id) {
+        System.out.println("======> ĐANG CHẠY XUỐNG MYSQL LẤY CHI TIẾT GÓI TẬP: " + id + " <======");
         return repositoryPort.findById(id)
                 .orElseThrow(() -> new DomainException("PLAN_NOT_FOUND", "Không tìm thấy thông tin gói tập"));
     }
 
     @Override
+    // Bộ nhớ đệm cho DANH SÁCH TỔNG (Khách lướt xem danh sách các gói)
+    @Cacheable(value = "membership_plans_cache", key = "'all_plans'")
     public List<MembershipPlan> getAllPlans() {
+        System.out.println("======> ĐANG CHẠY XUỐNG MYSQL LẤY DANH SÁCH TẤT CẢ GÓI TẬP <======");
         return repositoryPort.findAll();
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "membership_plans_cache", allEntries = true)
     public void deletePlan(UUID id) {
         if (!repositoryPort.findById(id).isPresent()) {
             throw new DomainException("PLAN_NOT_FOUND", "Gói tập không tồn tại hoặc đã xóa mềm trước đó");

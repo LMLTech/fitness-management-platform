@@ -7,6 +7,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -17,6 +19,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -34,24 +41,23 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // Cho phép toàn bộ API đăng ký / đăng nhập không cần token
-                        .requestMatchers("/api/v1/auth/**")
-                        .permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
 
                         // Cho phép cổng Webhook nhận dữ liệu tự động không cần JWT Token
-                        .requestMatchers("/api/v1/payments/confirmation/webhook")
-                        .permitAll()
+                        .requestMatchers("/api/v1/payments/confirmation/webhook").permitAll()
 
                         // Swagger UI + OpenAPI
                         .requestMatchers(
                                 "/swagger-ui/**",      // giao diện swagger
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**"
-                        )
-                        .permitAll()
+                        ).permitAll()
+
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/products/**").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/plans/**").permitAll()
 
                         // Tất cả API khác bắt buộc phải đăng nhập có token
-                        .anyRequest()
-                        .authenticated()
+                        .anyRequest().authenticated()
                 )
                 // Lắp máy quét JWT trước khi Spring Security kiểm tra quyền
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
