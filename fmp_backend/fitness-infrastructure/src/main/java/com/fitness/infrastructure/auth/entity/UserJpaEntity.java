@@ -56,6 +56,18 @@ public class UserJpaEntity {
     @Column(name = "two_factor_secret")
     private String twoFactorSecret;
 
+    @Column(name = "date_of_birth")
+    private java.time.LocalDate dateOfBirth;
+
+    @Column(name = "height_cm", precision = 5, scale = 2)
+    private java.math.BigDecimal heightCm;
+
+    @Column(name = "weight_kg", precision = 5, scale = 2)
+    private java.math.BigDecimal weightKg;
+
+    @Column(name = "blood_type", length = 5)
+    private String bloodType;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

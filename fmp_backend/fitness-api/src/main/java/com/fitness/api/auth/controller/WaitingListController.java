@@ -11,24 +11,37 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/bookings")
+@RequestMapping("/api/v1/waiting-list")
 @RequiredArgsConstructor
 public class WaitingListController {
 
     private final IWaitingListUseCase waitingListUseCase;
     private final IUserRepositoryPort userRepoPort;
 
-    // API Hội viên tự hủy lịch hẹn để nhường slot cho người trong hàng chờ
-    @PutMapping("/{bookingId}/cancel")
+    // 1. API Xem vị trí trong hàng chờ
+    @GetMapping("/sessions/{sessionId}/my-position")
     @PreAuthorize("hasAnyAuthority('ROLE_MEMBER')")
-    public ResponseEntity<ApiResponse<Void>> cancelMyBooking(@PathVariable("bookingId") UUID bookingId) {
+    public ResponseEntity<ApiResponse<Integer>> getMyPosition(@PathVariable UUID sessionId) {
         String currentMemberEmail = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
         UUID memberUserId = userRepoPort.findByEmail(currentMemberEmail)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản hội viên hiện hành"))
-                .getId();
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản")).getId();
 
-        waitingListUseCase.cancelBookingAndPromoteNext(memberUserId, bookingId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Hủy lịch đặt chỗ thành công! Hệ thống đã tự động nhường slot và đôn người trong danh sách chờ lên."));
+        int position = waitingListUseCase.getMyWaitlistPosition(memberUserId, sessionId);
+
+        String message = position > 0 ? "Vị trí của bạn là số " + position : "Bạn không nằm trong danh sách chờ lớp này";
+        return ResponseEntity.ok(ApiResponse.success(position, message));
+    }
+
+    // 2. API Chủ động rút khỏi hàng chờ
+    @DeleteMapping("/sessions/{sessionId}/leave")
+    @PreAuthorize("hasAnyAuthority('ROLE_MEMBER')")
+    public ResponseEntity<ApiResponse<Void>> leaveWaitlist(@PathVariable UUID sessionId) {
+        String currentMemberEmail = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UUID memberUserId = userRepoPort.findByEmail(currentMemberEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản")).getId();
+
+        waitingListUseCase.leaveWaitlist(memberUserId, sessionId);
+
+        return ResponseEntity.ok(ApiResponse.success(null, "Bạn đã rút khỏi danh sách chờ thành công."));
     }
 }

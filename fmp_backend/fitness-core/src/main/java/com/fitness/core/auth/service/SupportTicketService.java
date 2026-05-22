@@ -6,6 +6,7 @@ import com.fitness.core.auth.domain.TicketMessage;
 import com.fitness.core.auth.domain.AuditTrace;
 import com.fitness.core.auth.port.in.ISupportTicketUseCase;
 import com.fitness.core.auth.port.out.ISupportTicketRepositoryPort;
+import com.fitness.core.auth.port.in.INotificationUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import java.util.UUID;
 public class SupportTicketService implements ISupportTicketUseCase {
 
     private final ISupportTicketRepositoryPort ticketRepoPort;
+    private final INotificationUseCase notificationUseCase;
 
     @Override
     @Transactional
@@ -58,7 +60,19 @@ public class SupportTicketService implements ISupportTicketUseCase {
                 .message(messageText)
                 .build();
 
-        return ticketRepoPort.saveMessage(message);
+        TicketMessage savedMessage = ticketRepoPort.saveMessage(message);
+
+        // Bắn chuông nếu người reply KHÔNG PHẢI là chủ ticket (nghĩa là Admin trả lời)
+        if (!senderId.equals(ticket.getUserId())) {
+            notificationUseCase.createNotification(
+                    ticket.getUserId(),
+                    "Phản hồi Ticket mới 💬",
+                    "Bộ phận hỗ trợ vừa trả lời khiếu nại của bạn: \"" + ticket.getSubject() + "\".",
+                    "TICKET_REPLY"
+            );
+        }
+
+        return savedMessage;
     }
 
     @Override
@@ -70,6 +84,14 @@ public class SupportTicketService implements ISupportTicketUseCase {
 
         ticket.setStatus("Resolved");
         ticketRepoPort.saveTicket(ticket);
+
+        // Báo chuông khi đóng ticket
+        notificationUseCase.createNotification(
+                ticket.getUserId(),
+                "Ticket đã được đóng 🔒",
+                "Khiếu nại của bạn: \"" + ticket.getSubject() + "\" đã được giải quyết.",
+                "TICKET_RESOLVED"
+        );
     }
 
     @Override

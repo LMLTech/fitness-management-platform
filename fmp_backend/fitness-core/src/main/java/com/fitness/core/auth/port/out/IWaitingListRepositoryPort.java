@@ -9,4 +9,5 @@ public interface IWaitingListRepositoryPort {
     int getMaxPosition(UUID sessionId);
     Optional<WaitingList> getFirstInQueue(UUID sessionId);
     boolean isMemberInWaitlist(UUID memberId, UUID sessionId);
+    Optional<WaitingList> findByMemberIdAndSessionId(UUID memberId, UUID sessionId);
 }

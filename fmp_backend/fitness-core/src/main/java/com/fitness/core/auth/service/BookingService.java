@@ -8,6 +8,7 @@ import com.fitness.core.auth.port.in.IBookingUseCase;
 import com.fitness.core.auth.port.out.IBookingRepositoryPort;
 import com.fitness.core.auth.port.out.IClassSessionRepositoryPort;
 import com.fitness.core.auth.port.out.ISubscriptionRepositoryPort;
+import com.fitness.core.auth.port.in.INotificationUseCase;
 import com.fitness.core.auth.port.out.IWaitingListRepositoryPort;
 import com.fitness.core.common.exception.DomainException;
 import lombok.RequiredArgsConstructor;
@@ -24,21 +25,19 @@ public class BookingService implements IBookingUseCase {
     private final IClassSessionRepositoryPort sessionRepoPort;
     private final ISubscriptionRepositoryPort subscriptionRepoPort;
     private final IWaitingListRepositoryPort waitingListRepoPort;
+    private final INotificationUseCase notificationUseCase;
 
     @Override
     @Transactional(noRollbackFor = DomainException.class)
     public Booking bookClassSession(UUID memberUserId, UUID sessionId) {
 
-        // 1. Kiểm tra buổi học có tồn tại không
         ClassSession session = sessionRepoPort.findById(sessionId)
                 .orElseThrow(() -> new DomainException("SESSION_NOT_FOUND", "Buổi học này không tồn tại trên hệ thống"));
 
-        // 2. Chỉ cho phép đặt chỗ nếu lớp ở trạng thái 'Scheduled'
         if (!"Scheduled".equalsIgnoreCase(session.getStatus())) {
             throw new DomainException("INVALID_SESSION_STATUS", "Buổi học này đã bắt đầu, kết thúc hoặc đã bị hủy");
         }
 
-        // 3. KIỂM TRA GÓI TẬP: Hội viên phải có gói tập đang Active
         List<Subscription> subs = subscriptionRepoPort.findByMemberId(memberUserId);
         boolean hasValidSub = subs.stream().anyMatch(sub ->
                 "Active".equalsIgnoreCase(sub.getStatus()) &&
@@ -50,20 +49,15 @@ public class BookingService implements IBookingUseCase {
             throw new DomainException("NO_ACTIVE_SUBSCRIPTION", "Bạn không có gói tập nào đang kích hoạt (hoặc gói tập đã hết hạn/bị đóng băng) tại ngày diễn ra lớp học");
         }
 
-        // 4. KIỂM TRA TRÙNG LẶP: Hội viên đã đặt lớp này chưa
         if (bookingRepoPort.hasMemberBooked(memberUserId, sessionId)) {
             throw new DomainException("ALREADY_BOOKED", "Bạn đã đặt chỗ cho buổi học này rồi");
         }
 
-        // 5. KIỂM TRA SỨC CHỨA: Đếm số lượng slot hiện tại
         long currentBookings = bookingRepoPort.countConfirmedBookings(sessionId);
         if (currentBookings >= session.getMaxCapacity()) {
-
-            // Hệ thống tự động đẩy học viên vào hàng chờ nếu lớp đã full slot
             if (waitingListRepoPort.isMemberInWaitlist(memberUserId, sessionId)) {
                 throw new DomainException("ALREADY_IN_WAITLIST", "Lớp đã đầy và bạn đã nằm trong danh sách chờ của lớp này rồi");
             }
-
             int nextPosition = waitingListRepoPort.getMaxPosition(sessionId) + 1;
             WaitingList waitEntry = WaitingList.builder()
                     .memberId(memberUserId)
@@ -72,17 +66,73 @@ public class BookingService implements IBookingUseCase {
                     .status("Waiting")
                     .build();
             waitingListRepoPort.save(waitEntry);
-
             throw new DomainException("ADDED_TO_WAITLIST", "Lớp học hiện tại đã đầy slot! Hệ thống đã tự động đưa bạn vào danh sách chờ ở vị trí số " + nextPosition);
         }
 
-        // 6. Lưu thông tin đặt chỗ thành công
         Booking booking = Booking.builder()
                 .memberId(memberUserId)
                 .sessionId(sessionId)
                 .status("Confirmed")
                 .build();
 
-        return bookingRepoPort.save(booking);
+        Booking savedBooking = bookingRepoPort.save(booking);
+
+        notificationUseCase.createNotification(
+                memberUserId,
+                "Đặt chỗ thành công 🗓️",
+                "Bạn đã giữ chỗ thành công cho buổi tập ngày " + session.getDate().toString() + ". Hãy đến sớm 10 phút nhé!",
+                "BOOKING_SUCCESS"
+        );
+
+        return savedBooking;
+    }
+
+    @Override
+    @Transactional
+    public void cancelBooking(UUID bookingId, UUID memberUserId) {
+
+        Booking booking = bookingRepoPort.findById(bookingId)
+                .orElseThrow(() -> new DomainException("BOOKING_NOT_FOUND", "Không tìm thấy thông tin đặt chỗ"));
+
+        if (!booking.getMemberId().equals(memberUserId)) {
+            throw new DomainException("UNAUTHORIZED_ACTION", "Bạn không có quyền hủy lớp của người khác");
+        }
+
+        if (!"Confirmed".equalsIgnoreCase(booking.getStatus())) {
+            throw new DomainException("INVALID_BOOKING_STATUS", "Chỉ có thể hủy lớp khi đang ở trạng thái Confirmed");
+        }
+
+        ClassSession session = sessionRepoPort.findById(booking.getSessionId())
+                .orElseThrow(() -> new DomainException("SESSION_NOT_FOUND", "Buổi học này không tồn tại"));
+
+        booking.setStatus("Cancelled");
+        bookingRepoPort.save(booking);
+
+        notificationUseCase.createNotification(
+                memberUserId,
+                "Hủy chỗ thành công ❌",
+                "Bạn đã hủy chỗ buổi tập ngày " + session.getDate().toString() + ". Hẹn gặp lại bạn vào buổi sau!",
+                "BOOKING_CANCELLED"
+        );
+
+        waitingListRepoPort.getFirstInQueue(session.getId()).ifPresent(waitEntry -> {
+
+            waitEntry.setStatus("Promoted");
+            waitingListRepoPort.save(waitEntry);
+
+            Booking newBooking = Booking.builder()
+                    .memberId(waitEntry.getMemberId())
+                    .sessionId(session.getId())
+                    .status("Confirmed")
+                    .build();
+            bookingRepoPort.save(newBooking);
+
+            notificationUseCase.createNotification(
+                    waitEntry.getMemberId(),
+                    "Tin vui! Bạn đã được xếp lớp 🎉",
+                    "Có người vừa hủy chỗ! Hệ thống đã tự động xếp bạn vào danh sách chính thức lớp ngày " + session.getDate().toString() + ". Nhớ đi tập nhé!",
+                    "WAITLIST_PROMOTED"
+            );
+        });
     }
 }
