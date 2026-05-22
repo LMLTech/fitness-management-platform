@@ -54,4 +54,16 @@ public class WaitingListMysqlAdapter implements IWaitingListRepositoryPort {
     public boolean isMemberInWaitlist(UUID memberId, UUID sessionId) {
         return jpaRepository.existsByMemberIdAndSessionIdAndStatus(memberId, sessionId, "Waiting");
     }
+
+    @Override
+    public Optional<WaitingList> findByMemberIdAndSessionId(UUID memberId, UUID sessionId) {
+        return jpaRepository.findByMemberIdAndSessionId(memberId, sessionId)
+                .map(entity -> WaitingList.builder()
+                        .id(entity.getId())
+                        .memberId(entity.getMemberId())
+                        .sessionId(entity.getSessionId())
+                        .position(entity.getPosition())
+                        .status(entity.getStatus())
+                        .build());
+    }
 }

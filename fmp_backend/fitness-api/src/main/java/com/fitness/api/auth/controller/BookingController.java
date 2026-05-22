@@ -35,4 +35,23 @@ public class BookingController {
         Booking booking = bookingUseCase.bookClassSession(memberUserId, dto.getSessionId());
         return ResponseEntity.ok(ApiResponse.success(booking, "Đặt chỗ giữ suất lớp học thành công!"));
     }
+
+    // API Hủy đặt chỗ (Chuẩn bảo mật lấy ID từ Token)
+    @PutMapping("/{bookingId}/cancel")
+    @PreAuthorize("hasAnyAuthority('ROLE_MEMBER')") // Bắt buộc phải có quyền Hội viên
+    public ResponseEntity<ApiResponse<Void>> cancelBooking(@PathVariable UUID bookingId) {
+
+        // 1. Lấy thông tin email từ JWT Token giống hệt như lúc đặt chỗ (Chống Fake ID)
+        String currentMemberEmail = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        // 2. Tìm ra UUID gốc của hội viên đang thực hiện thao tác hủy
+        UUID memberUserId = userRepoPort.findByEmail(currentMemberEmail)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản hội viên hiện hành"))
+                .getId();
+
+        // 3. Gọi logic hủy lớp và tự động đôn danh sách chờ (Waitlist Promotion)
+        bookingUseCase.cancelBooking(bookingId, memberUserId);
+
+        return ResponseEntity.ok(ApiResponse.success(null, "Đã hủy đặt chỗ thành công!"));
+    }
 }

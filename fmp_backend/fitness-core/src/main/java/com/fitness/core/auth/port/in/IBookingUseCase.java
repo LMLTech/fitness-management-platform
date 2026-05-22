@@ -5,4 +5,5 @@ import java.util.UUID;
 
 public interface IBookingUseCase {
     Booking bookClassSession(UUID memberUserId, UUID sessionId);
+    void cancelBooking(UUID bookingId, UUID memberUserId);
 }

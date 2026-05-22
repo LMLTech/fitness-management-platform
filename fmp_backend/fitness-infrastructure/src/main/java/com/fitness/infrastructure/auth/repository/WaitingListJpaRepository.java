@@ -21,4 +21,7 @@ public interface WaitingListJpaRepository extends JpaRepository<WaitingListJpaEn
 
     // Kiểm tra xem người này đã nằm trong hàng chờ của lớp này chưa
     boolean existsByMemberIdAndSessionIdAndStatus(UUID memberId, UUID sessionId, String status);
+
+    // Tìm record Hàng chờ của 1 user cụ thể trong 1 buổi học
+    Optional<WaitingListJpaEntity> findByMemberIdAndSessionId(UUID memberId, UUID sessionId);
 }

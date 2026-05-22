@@ -55,4 +55,26 @@ public class WaitingListService implements IWaitingListUseCase {
             bookingRepoPort.save(autoBooking);
         });
     }
+    @Override
+    public int getMyWaitlistPosition(UUID memberId, UUID sessionId) {
+        return waitingListRepoPort.findByMemberIdAndSessionId(memberId, sessionId)
+                .filter(waitEntry -> "Waiting".equalsIgnoreCase(waitEntry.getStatus()))
+                .map(WaitingList::getPosition)
+                .orElse(0); // Trả về 0 nếu người dùng không nằm trong danh sách chờ
+    }
+
+    @Override
+    @Transactional
+    public void leaveWaitlist(UUID memberId, UUID sessionId) {
+        WaitingList waitEntry = waitingListRepoPort.findByMemberIdAndSessionId(memberId, sessionId)
+                .orElseThrow(() -> new DomainException("NOT_IN_WAITLIST", "Bạn không có trong danh sách chờ của lớp này"));
+
+        if (!"Waiting".equalsIgnoreCase(waitEntry.getStatus())) {
+            throw new DomainException("INVALID_STATUS", "Chỉ có thể rút lui khi đang ở trạng thái đang chờ (Waiting)");
+        }
+
+        // Cập nhật trạng thái thành Cancelled để nhường chỗ lại cho người xếp sau
+        waitEntry.setStatus("Cancelled");
+        waitingListRepoPort.save(waitEntry);
+    }
 }
